@@ -1,18 +1,16 @@
-# Consultation Registration Management System — Laravel API
+# Website Inquiry Submissions API
 
-Backend API for the website consultation form and the existing Next.js Admin Dashboard. The frontend UI is intentionally outside this repository's implementation scope.
+Laravel backend for collecting and securely viewing submissions from five public website forms. The admin dashboard UI is intentionally handled separately by the frontend developer.
 
 ## Stack
 
 - Laravel 13
 - PHP 8.3+
 - MySQL 8+
-- Laravel Sanctum personal access tokens
+- Laravel Sanctum bearer-token authentication
 - PHPUnit 12
 
-Laravel 13 requires PHP 8.3 or newer. Check the official [Laravel release/support policy](https://laravel.com/docs/13.x/releases) and [deployment requirements](https://laravel.com/docs/13.x/deployment) before selecting the production runtime.
-
-## Install locally
+## Setup
 
 1. Install PHP 8.3+, Composer 2, MySQL 8+, and the PHP extensions required by Laravel (including PDO MySQL, mbstring, OpenSSL, cURL, DOM, Fileinfo, and XML).
 2. Clone the repository and install dependencies:
@@ -25,25 +23,25 @@ Laravel 13 requires PHP 8.3 or newer. Check the official [Laravel release/suppor
    php artisan key:generate
    ```
 
-3. Create a MySQL database, then set DB_DATABASE, DB_USERNAME and DB_PASSWORD in `.env`.
-4. Set `APP_URL`, `CORS_ALLOWED_ORIGINS`, mail settings, and `CONSULTATION_ADMIN_EMAIL`.
-5. Run database migrations:
+3. Create a MySQL database and set `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `.env`.
+4. Set `APP_URL`, `CORS_ALLOWED_ORIGINS`, mail settings, `CONSULTATION_ADMIN_EMAIL`, and `WEBSITE_FORMS_ADMIN_EMAIL` as required.
+5. Run migrations:
 
    ```bash
-   php artisan migrate --seed
+   php artisan migrate
    ```
 
-6. Create the first administrator interactively. Do not commit the password or run a default-password seeder:
+6. Create the first active administrator with a strong unique password. Do not commit credentials or add a default-password seeder:
 
    ```bash
    php artisan tinker
    ```
 
-   Then run, replacing the example email and password with strong unique values:
+   Then run:
 
    ```php
-   App\\Models\\User::create([
-       'name' => 'System Administrator',
+   App\Models\User::create([
+       'name' => 'Website Administrator',
        'email' => 'admin@your-domain.example',
        'password' => 'REPLACE-WITH-A-STRONG-UNIQUE-PASSWORD',
        'role' => 'admin',
@@ -51,7 +49,7 @@ Laravel 13 requires PHP 8.3 or newer. Check the official [Laravel release/suppor
    ]);
    ```
 
-   The User model hashes passwords automatically. Create manager/agent accounts the same way with the appropriate `role`.
+   The User model hashes passwords automatically.
 
 7. Start the API:
 
@@ -59,47 +57,29 @@ Laravel 13 requires PHP 8.3 or newer. Check the official [Laravel release/suppor
    php artisan serve
    ```
 
-## Existing website forms (Contact / Sourcing / Meeting / Event)
+## Public form endpoints
 
-Public submissions use POST `/api/website-forms/{contact|sourcing|meeting|event}`. The full form-specific payload is preserved as JSON, with common contact fields indexed for admin search. Admin management APIs are documented in `docs/API.md`; frontend mapping is in `docs/FRONTEND_HANDOFF.md`.
+- `POST /api/consultations`
+- `POST /api/website-forms/contact`
+- `POST /api/website-forms/sourcing`
+- `POST /api/website-forms/meeting`
+- `POST /api/website-forms/event`
 
-## API overview
+The four generic website-form endpoints preserve the complete submitted JSON payload, including custom and nested fields. See `docs/API.md` for request examples.
 
-Public:
-- `POST /api/consultations` — submit a request (5 requests/minute/IP).
-- `POST /api/auth/login` — exchange an administrator account for a Sanctum bearer token.
+## Private dashboard API
 
-Authenticated:
-- `GET /api/auth/me`
-- `POST /api/auth/logout`
-- `GET /api/admin/consultations`
-- `GET /api/admin/consultations/{id}`
-- `PATCH /api/admin/consultations/{id}`
-- `PATCH /api/admin/consultations/{id}/status`
-- `POST /api/admin/consultations/{id}/notes`
-- `POST /api/admin/consultations/{id}/assign`
-- `DELETE /api/admin/consultations/{id}` (soft delete; admin only)
-- `GET /api/admin/consultation-stats`
-- `GET /api/admin/consultations-export` (CSV)
-- `GET /api/admin/team-members` (assignment choices)
+- `POST /api/auth/login` — active administrator login.
+- `GET /api/auth/me` — current administrator profile.
+- `POST /api/auth/logout` — revoke the current bearer token.
+- `GET /api/admin/submissions` — one paginated, date-ordered list across all five forms.
+- `GET /api/admin/submissions/{formType}/{id}` — complete visitor-submitted details for one record.
 
-See [API contract](docs/API.md) and [Next.js handover notes](docs/FRONTEND_HANDOFF.md).
-
-## Roles
-
-- `admin`: full access, including soft delete.
-- `manager`: view, update, change status, add notes, assign, export and view statistics.
-- `agent`: view assigned requests, update their status, add internal notes and view their own statistics.
-
-Agent detail, status and note operations are restricted to requests assigned to that agent. Inactive users are blocked from consultation permissions.
+All dashboard endpoints require an active administrator's Sanctum bearer token. There is one administrator access level; manager/agent permissions and CRM workflows are not part of the simplified dashboard scope.
 
 ## Notifications
 
-After a registration is saved, the API attempts to send:
-- Applicant confirmation email with the consultation reference.
-- Admin notification when `CONSULTATION_ADMIN_EMAIL` is configured.
-
-Set a working SMTP mailer in `.env` for delivery. The default `MAIL_MAILER=log` writes messages to the application log for local testing. Mail delivery failures are logged and do not undo the saved request.
+Submission notification emails are attempted after a public form is saved. Configure a working SMTP mailer in `.env` to deliver them. The default local mail configuration may log messages rather than deliver them. Email delivery errors do not undo a saved submission.
 
 ## Tests
 
@@ -107,13 +87,13 @@ Set a working SMTP mailer in `.env` for delivery. The default `MAIL_MAILER=log` 
 vendor/bin/phpunit
 ```
 
-GitHub Actions runs the PHPUnit feature suite on pushes to `main` and `backend/**` and on pull requests targeting `main`.
+GitHub Actions runs the feature test suite on pushes and pull requests.
 
 ## Production checklist
 
-- Set `APP_ENV=production`, `APP_DEBUG=false`, a unique APP_KEY and HTTPS APP_URL.
-- Configure MySQL backups, SMTP, logs, and a specific CORS origin for the production Next.js domain.
-- Use HTTPS only and restrict database/network access.
-- Create named admin accounts with unique strong passwords; deactivate unused accounts.
-- Review retention/deletion requirements for applicant personal information.
-- Run migrations and the full test suite against the production-equivalent database before launch.
+- Set `APP_ENV=production`, `APP_DEBUG=false`, a unique `APP_KEY`, and HTTPS `APP_URL`.
+- Configure MySQL backups, SMTP, logs, and the exact production frontend origin in CORS settings.
+- Serve the API over HTTPS only and restrict database/network access.
+- Create named administrator accounts with unique strong passwords and deactivate unused accounts.
+- Run migrations and the complete test suite against the production-equivalent database before launch.
+- Confirm the frontend sends every rendered website form field in the JSON payload. File uploads require a separate implementation and are not supported by the generic payload endpoint.

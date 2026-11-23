@@ -1,16 +1,15 @@
-# Consultation Management API Contract
+# Website Inquiry Submissions API
 
-Base URL example: `https://api.example.com/api`
+Base URL example: `https://api.example.com/api`. JSON is used for requests and responses. Private dashboard routes require `Authorization: Bearer {token}`.
 
-JSON is used unless an endpoint returns a CSV download. Protected routes require `Authorization: Bearer {token}`.
+## Public form endpoints
 
-## Public registration
+### Consultation
 
-### POST /consultations
+`POST /consultations`
 
-No authentication required. Rate limit: 5 requests per IP per minute.
+Example request:
 
-Request:
 ```json
 {
   "full_name": "Ahmed Mohamed",
@@ -26,146 +25,19 @@ Request:
 }
 ```
 
-All fields are required. `product_group` accepts an array of strings or a comma-separated string (the API stores a normalized array). `privacy_consent` must be accepted. Phone accepts international-style punctuation but must contain 7–15 digits. `preferred_consultation_time` is stored as the submitted preference, e.g. "Morning", "Afternoon", or a date/time string agreed with the frontend.
+All fields are required. `product_group` accepts an array or a comma-separated string and is stored as an array. `privacy_consent` must be accepted. Phone numbers are validated for 7–15 digits. The endpoint is limited to 5 requests per IP per minute.
 
-Success: HTTP 201
-```json
-{
-  "success": true,
-  "message": "Consultation request submitted successfully",
-  "data": {
-    "id": 125,
-    "reference": "CONS-2026-00125",
-    "status": "New"
-  }
-}
-```
+### Contact, Sourcing, Meeting and Event
 
-Validation failure: HTTP 422 with Laravel's standard `message` and `errors` object. Rate limit: HTTP 429.
+Use one endpoint for each existing website form:
 
-## Authentication
+- `POST /website-forms/contact`
+- `POST /website-forms/sourcing`
+- `POST /website-forms/meeting`
+- `POST /website-forms/event`
 
-### POST /auth/login
+Preferred JSON body:
 
-```json
-{
-  "email": "admin@your-domain.example",
-  "password": "your-strong-password",
-  "device_name": "Next.js Admin Dashboard"
-}
-```
-
-Returns `data.token` and `data.token_type = Bearer`. Login is limited to 5 attempts per minute per IP/email combination.
-
-### GET /auth/me
-Returns the authenticated user profile.
-
-### POST /auth/logout
-Revokes the current personal access token.
-
-## Admin endpoints
-
-All routes require Sanctum bearer authentication and role permissions.
-
-### GET /admin/consultations
-
-Query parameters:
-- `search`: reference, name, company or email contains.
-- `status`: one of the allowed statuses.
-- `from`, `to`: submission date range (YYYY-MM-DD).
-- `assigned_to`: user ID (admin/manager scope).
-- `per_page`: 1–100; default 25.
-
-Response has `success`, `data` array and `meta` pagination fields.
-
-Agents only see requests assigned to their own account.
-
-### GET /admin/consultations/{id}
-
-Returns applicant information, privacy consent, assignee, internal notes and complete status history. Agents receive 404 for records not assigned to them.
-
-### PATCH /admin/consultations/{id}
-
-Accepts any subset of applicant fields from the public request schema. Validation is applied to submitted fields.
-
-### PATCH /admin/consultations/{id}/status
-
-```json
-{
-  "status": "Contacted",
-  "note": "Called the applicant; awaiting documents."
-}
-```
-
-Allowed statuses: `New`, `Under Review`, `Contacted`, `Consultation Scheduled`, `In Progress`, `Completed`, `Cancelled`.
-
-Each actual status change is stored in `consultation_status_histories` with actor, previous/current status, note and timestamp. Re-submitting the current status does not create a duplicate history row.
-
-### POST /admin/consultations/{id}/notes
-
-```json
-{ "note": "Internal follow-up note; not visible to the applicant." }
-```
-
-Creates a private note with its author and timestamp.
-
-### GET /admin/team-members
-Returns active manager/agent user choices for the assignment picker. Requires assignment permission.
-
-### POST /admin/consultations/{id}/assign
-
-```json
-{ "assigned_to": 18 }
-```
-
-Only active users with role `manager` or `agent` can be assigned.
-
-### GET /admin/consultation-stats
-
-Returns total and counts by all seven statuses. Agent totals are limited to their assigned requests.
-
-### GET /admin/consultations-export
-
-Downloads filtered CSV. Uses the same search/status/date/assignee filters as the list endpoint, streams results in chunks, and neutralizes spreadsheet formula-leading cells.
-
-Applicant edits, note additions, assignment and soft deletion are also recorded in the activity log returned by the details endpoint.
-
-### DELETE /admin/consultations/{id}
-
-Admin role only. Uses soft deletion.
-
-## Access matrix
-
-| Action | Admin | Manager | Agent |
-|---|---:|---:|---:|
-| List/view | Yes | Yes | Assigned only |
-| Edit applicant fields | Yes | Yes | No |
-| Change status | Yes | Yes | Assigned only |
-| Add internal note | Yes | Yes | Assigned only |
-| Assign request | Yes | Yes | No |
-| Export CSV | Yes | Yes | No |
-| View statistics | Yes | Yes | Assigned only |
-| Delete (soft) | Yes | No | No |
-
-## Data privacy
-
-The public creation response contains only the record ID, reference and initial status. Internal notes, status history and assignment are only available through authorized admin endpoints.
-
----
-
-# Additional Website Forms API (Contact / Sourcing / Meeting / Event)
-
-The generic endpoint stores the full form payload without discarding form-specific fields. Exact staging form field names should be mapped by the frontend developer after checking the live rendered forms.
-
-## Public submission
-
-`POST /api/website-forms/{formType}`
-
-Allowed `formType` values: `contact`, `sourcing`, `meeting`, `event`.
-
-The endpoint accepts either a `payload` object or flat form fields. A honeypot field named `_website_trap` must remain empty. Requests are rate-limited to 5 per IP per minute by default.
-
-Example:
 ```json
 {
   "payload": {
@@ -173,45 +45,111 @@ Example:
     "company": "ABC Trading LLC",
     "email": "ayesha@example.com",
     "phone": "+971501234567",
-    "subject": "General enquiry",
     "message": "Please contact me about your services.",
-    "event_name": "Export Forum",
-    "custom_field_from_the_form": "Preserved exactly in payload"
+    "custom_nested_field": {
+      "selection": ["Option A", "Option B"]
+    }
   }
 }
 ```
 
-The backend stores the entire payload JSON. It additionally extracts common contact fields into indexed columns when these aliases are supplied: name/full_name/contact_name/your_name; company/company_name/organization/business_name; email/email_address/contact_email; phone/phone_number/mobile/mobile_number/telephone. Email and phone are format-checked when supplied.
+The backend stores the full payload, including unknown form-specific keys, arrays and nested values. Flat JSON bodies are also accepted. Common contact values are extracted for the list view when recognised. Email and phone values are validated when provided. Do not populate the reserved `_website_trap` honeypot field.
 
-Success (201):
+All public endpoints return HTTP 201 with a submission ID, reference and form type. Invalid requests return HTTP 422; rate-limited requests return HTTP 429.
+
+## Authentication
+
+### POST /auth/login
+
+Only active users whose account role is `admin` can log in.
+
+```json
+{
+  "email": "admin@your-domain.example",
+  "password": "your-strong-password",
+  "device_name": "Website Inquiry Dashboard"
+}
+```
+
+The response contains `data.token` and `data.token_type = "Bearer"`. Login is limited to 5 attempts per minute per IP/email combination.
+
+### GET /auth/me
+
+Requires a bearer token. Returns the current administrator's ID, name and email.
+
+### POST /auth/logout
+
+Requires a bearer token. Revokes the current token; use this endpoint when the administrator logs out.
+
+## Private dashboard endpoints
+
+Both endpoints require a valid Sanctum bearer token belonging to an active administrator. Unauthenticated requests return HTTP 401; authenticated non-admin or inactive users receive HTTP 403.
+
+### GET /admin/submissions
+
+Returns one combined list containing Consultation, Contact, Sourcing, Meeting and Event submissions, sorted newest first.
+
+Optional query parameters:
+
+| Parameter | Purpose |
+|---|---|
+| `form_type` | Filter to `consultation`, `contact`, `sourcing`, `meeting`, or `event` |
+| `from` | Include submissions on or after this date (`YYYY-MM-DD`) |
+| `to` | Include submissions on or before this date (`YYYY-MM-DD`) |
+| `per_page` | Page size from 1 to 100; default 25 |
+
+Example: `GET /admin/submissions?form_type=contact&from=2026-11-01&per_page=25`
+
+Example response:
+
 ```json
 {
   "success": true,
-  "message": "Contact form submitted successfully.",
-  "data": {
-    "id": 42,
-    "reference": "WEB-CONTACT-20261123-A1B2C3D4",
-    "form_type": "contact",
-    "status": "New"
+  "data": [
+    {
+      "id": 42,
+      "reference": "WEB-CONTACT-20261123-A1B2C3D4",
+      "form_type": "contact",
+      "name": "Ayesha Khan",
+      "company": "ABC Trading LLC",
+      "email": "ayesha@example.com",
+      "phone": "+971501234567",
+      "submitted_at": "2026-11-23T10:30:00.000000Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 25,
+    "total": 1
   }
 }
 ```
 
-## Admin management
+The `id` is scoped to its form table. Always use both `form_type` and `id` when opening a submission.
 
-All admin routes require a Sanctum bearer token and the relevant `website_forms.*` permission.
+### GET /admin/submissions/{formType}/{id}
 
-- `GET /api/admin/website-forms`: paginated list; filters: `form_type`, `status`, `search`, `from`, `to`, `assigned_to`, `per_page`.
-- `GET /api/admin/website-forms/{id}`: full payload, assignee, internal notes, status history and audit log.
-- `PATCH /api/admin/website-forms/{id}`: replace/update the stored `payload` object.
-- `PATCH /api/admin/website-forms/{id}/status`: body `{"status":"Contacted","note":"Called the contact" }`.
-- `POST /api/admin/website-forms/{id}/notes`: body `{"note":"Internal note"}`.
-- `POST /api/admin/website-forms/{id}/assign`: body `{"assigned_to":12}`.
-- `DELETE /api/admin/website-forms/{id}`: admin-only soft delete.
-- `GET /api/admin/website-forms-stats`: total, counts by form type and status.
-- `GET /api/admin/website-forms-export`: filtered CSV export (includes payload JSON).
+Returns all information entered by the visitor for one selected form.
 
-Statuses: New, Under Review, Contacted, Consultation Scheduled, In Progress, Completed, Cancelled.
+Allowed `formType` values: `consultation`, `contact`, `sourcing`, `meeting`, `event`.
 
-Role access mirrors Consultation requests: admin full access, manager cannot delete, agent can only view/change status/add notes for records assigned to that agent. Applicant notifications are sent when an email field is detected; optional admin notifications use `WEBSITE_FORMS_ADMIN_EMAIL` (falls back to `CONSULTATION_ADMIN_EMAIL`).
+Example: `GET /admin/submissions/meeting/42`
 
+The response contains the record metadata and a `details` object. For Consultation, `details` contains every field from the consultation form. For the other forms, `details` is the complete original JSON payload, including custom and nested fields.
+
+## Access and scope
+
+The simplified dashboard provides only:
+- Secure administrator login and logout.
+- One combined list of all five website form submission types.
+- Complete read-only details for each submission.
+
+No CRM roles, assignment, notes, follow-up tasks, status workflows, analytics, dashboard UI, or export endpoints are included in this API scope.
+
+## Deployment notes
+
+- Configure a specific production frontend origin in CORS settings.
+- Use HTTPS for both frontend and API.
+- Configure SMTP separately if submission notification emails are required.
+- The generic form endpoint stores JSON fields; file uploads are not supported.

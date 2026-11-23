@@ -1,16 +1,29 @@
-# Next.js Frontend Handover — Existing Website Forms
+# Frontend Handover — Simple Website Inquiry Dashboard API
 
-The frontend developer owns the website forms and the existing Admin Dashboard UI. This backend adds APIs only and does not build or replace any UI.
+The backend in this repository provides APIs only. The frontend developer is responsible for building the simple private dashboard UI and connecting the existing website forms. Do not add CRM modules or task workflows.
 
-## Public form endpoints
+## Login and logout
 
-Use the endpoint corresponding to the existing website form:
+1. Send `POST {API_BASE_URL}/auth/login` with `email`, `password`, and optional `device_name`.
+2. Store the returned bearer token using the frontend application's approved secure token strategy.
+3. Send `Authorization: Bearer <token>` with all private dashboard requests.
+4. Use `GET {API_BASE_URL}/auth/me` to restore the signed-in administrator profile.
+5. Send `POST {API_BASE_URL}/auth/logout` on logout and clear the local token.
+
+Only active administrator accounts can sign in.
+
+## Public website form submissions
+
+Keep each existing website form and its branding/design. Connect its submit handler to:
+
+- Consultation: `POST {API_BASE_URL}/consultations`
 - Contact: `POST {API_BASE_URL}/website-forms/contact`
 - Sourcing: `POST {API_BASE_URL}/website-forms/sourcing`
 - Meeting: `POST {API_BASE_URL}/website-forms/meeting`
 - Event: `POST {API_BASE_URL}/website-forms/event`
 
-Send JSON. Preferred format:
+Consultation uses its documented fixed field contract. The other four endpoints accept a `payload` object and preserve all custom, nested and array fields. Example:
+
 ```json
 {
   "payload": {
@@ -23,38 +36,35 @@ Send JSON. Preferred format:
 }
 ```
 
-The endpoint also accepts flat JSON fields for compatibility. Send every existing form field within the payload; the backend stores unknown/custom field names and multi-select values without requiring a backend schema change. Do not send a honeypot value: the reserved `_website_trap` field must be empty or omitted.
+The four generic endpoints also accept flat JSON fields. The reserved `_website_trap` honeypot field must be empty or omitted. Current generic payload handling supports text, numbers, booleans, arrays and nested objects; it does not support file uploads.
 
-The backend extracts common contact values from aliases:
-- Name: `full_name`, `name`, `contact_name`, `your_name`
-- Company: `company`, `company_name`, `organization`, `business_name`
-- Email: `email`, `email_address`, `contact_email`
-- Phone: `phone`, `phone_number`, `mobile`, `mobile_number`, `telephone`
+## Dashboard list
 
-All original fields are retained under `data.payload` in the admin detail response. A valid email/phone is enforced when those common keys are provided. Limit the payload to 80 top-level fields and 50 KB. The endpoint is rate-limited at 5 requests per IP per minute by default.
+Use `GET {API_BASE_URL}/admin/submissions`.
 
-On success (201), show your existing form success state and store/display the returned reference. Handle 422 validation and 429 rate-limit errors.
+Optional query parameters:
+- `form_type`: consultation, contact, sourcing, meeting, or event.
+- `from` and `to`: submission date range in `YYYY-MM-DD` format.
+- `per_page`: 1–100; default 25.
 
-## Existing Consultation form
+The response is a single newest-first list across all five form types. Each row includes ID, reference, form type, visitor name, company, email, phone and submission date/time. Use pagination fields under `meta`.
 
-Keep using the existing endpoint `POST /consultations`; do not route consultation form submissions through the generic form endpoint. See `docs/API.md` for its request contract.
+## Submission detail
 
-## Admin dashboard integrations
+Use `GET {API_BASE_URL}/admin/submissions/{formType}/{id}`.
 
-The frontend should integrate these sections inside the existing dashboard:
-- Website form summary cards: GET `/admin/website-forms-stats`
-- List/table, filtering and pagination: GET `/admin/website-forms`
-- View details and all dynamic fields: GET `/admin/website-forms/{id}`
-- Edit form data: PATCH `/admin/website-forms/{id}`
-- Update status/history: PATCH `/admin/website-forms/{id}/status`
-- Internal notes: POST `/admin/website-forms/{id}/notes`
-- Assignment choices: GET `/admin/team-members`
-- Assign: POST `/admin/website-forms/{id}/assign`
-- Delete: DELETE `/admin/website-forms/{id}`
-- CSV export: GET `/admin/website-forms-export` with the active filters
+The form type is required because IDs are generated separately in the underlying form tables. Render every key from `data.details`; for Contact, Sourcing, Meeting and Event this is the full original payload. For Consultation it contains all consultation form fields.
 
-All admin routes require `Authorization: Bearer <token>`.
+## UI scope
 
-## Important staging mapping note
+Build only:
+- Administrator login/logout.
+- One submissions list, including submission date/time and form type.
+- A simple form-type/date filter, if desired.
+- A details view showing every field the visitor submitted.
 
-The staging URL was not accessible from the development network when these APIs were added. These APIs therefore accept and preserve flexible form payloads rather than assuming unverified field names. Before frontend integration is signed off, inspect each live form and verify that every rendered field name/value is sent in `payload`, and confirm that any select/radio option values and file-upload controls have the required backend treatment. The current generic payload API handles text, number, boolean, arrays and nested objects; it does not accept file uploads.
+Do not add task assignment, CRM workflows, internal notes, complex roles, analytics, or advanced reports.
+
+## Integration verification
+
+The staging website could not be inspected during backend implementation. Before sign-off, verify that each actual website form sends every rendered field using its correct value and key. Confirm select/radio option values with the website owner. File-upload fields need a separately agreed backend change.
