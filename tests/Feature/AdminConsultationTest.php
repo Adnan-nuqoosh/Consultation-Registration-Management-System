@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\\Feature;
+namespace Tests\Feature;
 
-use App\\Models\\ConsultationRequest;
-use App\\Models\\User;
-use App\\Models\\WebsiteFormSubmission;
-use Illuminate\\Foundation\\Testing\\RefreshDatabase;
-use Laravel\\Sanctum\\Sanctum;
-use Tests\\TestCase;
+use App\Models\ConsultationRequest;
+use App\Models\User;
+use App\Models\WebsiteFormSubmission;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class AdminConsultationTest extends TestCase
 {

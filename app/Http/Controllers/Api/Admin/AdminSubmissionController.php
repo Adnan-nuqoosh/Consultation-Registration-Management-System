@@ -1,14 +1,14 @@
 <?php
 
-namespace App\\Http\\Controllers\\Api\\Admin;
+namespace App\Http\Controllers\Api\Admin;
 
-use App\\Http\\Controllers\\Controller;
-use App\\Models\\ConsultationRequest;
-use App\\Models\\WebsiteFormSubmission;
-use Illuminate\\Database\\Query\\Builder;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Validation\\Rule;
+use App\Http\Controllers\Controller;
+use App\Models\ConsultationRequest;
+use App\Models\WebsiteFormSubmission;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class AdminSubmissionController extends Controller
 {

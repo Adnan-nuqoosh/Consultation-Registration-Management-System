@@ -40,7 +40,7 @@ Laravel backend for collecting and securely viewing submissions from five public
    Then run:
 
    ```php
-   App\\Models\\User::create([
+   App\Models\User::create([
        'name' => 'Website Administrator',
        'email' => 'admin@your-domain.example',
        'password' => 'REPLACE-WITH-A-STRONG-UNIQUE-PASSWORD',
