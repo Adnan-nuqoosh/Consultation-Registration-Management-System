@@ -1,0 +1,36 @@
+name: Laravel API Tests
+
+on:
+  push:
+    branches: [main, "backend/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_sqlite, sqlite3, ctype, curl, dom, fileinfo, filter, hash, openssl, session, tokenizer, xml
+          coverage: none
+
+      - name: Validate composer
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run migrations and automated tests
+        run: php artisan test
