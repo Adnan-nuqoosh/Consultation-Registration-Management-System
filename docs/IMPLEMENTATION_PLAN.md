@@ -1,35 +1,36 @@
-# Backend Implementation Plan
+# Backend Implementation Status
 
-The repository was empty when work began. No pre-existing Laravel app, auth setup, role model or database schema was available to audit. A fresh Laravel API foundation has therefore been added on a dedicated branch.
+## Implemented
 
-## Implemented in this branch
-- [x] Laravel 13 project foundation with PHP 8.3+ requirement.
-- [x] Public consultation registration endpoint with validation, privacy consent, IP throttling and unique reference number.
-- [x] MySQL migrations for users, requests, notes, status history and Sanctum tokens.
-- [x] Admin bearer authentication and admin/manager/agent access rules.
-- [x] Listing, search, status/date/assignee filters and pagination.
-- [x] Details, applicant editing, status update/history, internal notes and assignment.
-- [x] Dashboard statistics and permission-protected CSV export.
-- [x] Applicant confirmation and optional admin notification email attempts.
-- [x] PHPUnit feature tests and GitHub Actions workflow definition.
-- [x] API contract and Next.js handover notes.
+- [x] Laravel 13 API foundation using PHP 8.3+.
+- [x] Consultation public form endpoint.
+- [x] Contact, Sourcing, Meeting and Event public endpoints with full JSON payload preservation.
+- [x] Secure administrator login, token validation and logout using Laravel Sanctum.
+- [x] One authenticated submissions list that combines all five form types and sorts by submission date.
+- [x] Read-only detail endpoint returning the complete visitor-submitted data for each form.
+- [x] Basic form-type and date filtering with pagination.
+- [x] Rate limiting on login and public submissions.
+- [x] Feature tests for public forms, administrator access, combined listing, detail retrieval and token revocation.
+- [x] API contract and frontend handover documentation for the simplified scope.
 
-- [x] Add flexible Contact, Sourcing, Meeting and Event form APIs with separate admin management, status history, internal notes, assignment, CSV export and notifications.
-- [x] Add automated tests for all four form types and admin workflows.
+## Explicitly out of scope
 
-## Still to verify before production
-- [x] Composer dependency installation and GitHub Actions CI run: passed (10 PHPUnit tests, 34 assertions; SQLite in-memory).
-- [ ] Run migrations against MySQL 8 (CI currently uses SQLite in-memory for feature tests).
-- [ ] Configure real SMTP and verify both email destinations.
-- [ ] Confirm exact allowed product groups, export-status options and preferred-time format with the business/frontend team.
-- [ ] Review production CORS domains, HTTPS, logging, database backups and data retention.
-- [ ] Have the frontend developer map all exact staging fields, select values and any file inputs to the generic payload contract; staging URL was unavailable during API work.
-- [ ] Have the frontend developer integrate and test these forms and the existing Consultation form inside the existing dashboard.
+- Admin dashboard UI and website frontend changes.
+- CRM modules, task assignment, follow-up workflow, internal notes and status management.
+- Manager/agent role permissions, analytics, advanced reporting and CSV export.
+- File uploads through generic website-form payloads.
 
-## Decisions / assumptions
-- The project targets Laravel 13 and PHP 8.3+.
-- Bearer-token authentication uses Laravel Sanctum because no existing admin auth system was present in the empty repository.
-- Roles are admin, manager and agent, with permissions defined in the application provider. Agents are restricted to requests assigned to them.
-- Product groups are stored as a JSON array.
-- Preferred consultation time is a string preference, not automatically interpreted as a calendar booking.
-- Delete is implemented as soft delete.
+## Remaining production verification
+
+- [ ] Run migrations and the full test suite against the target MySQL 8 environment.
+- [ ] Configure real SMTP and verify notification delivery if email notifications are required.
+- [ ] Confirm production CORS origin, HTTPS, logging, backups and retention policy.
+- [ ] Frontend developer to inspect the live forms and verify exact field keys, option values and file-upload requirements.
+- [ ] Frontend developer to integrate and test the simple dashboard UI against the documented private endpoints.
+
+## Assumptions
+
+- The repository is the standalone Laravel backend; the dashboard frontend is maintained separately.
+- Only active users with the `admin` account role can use dashboard login and private submission endpoints.
+- Submission detail IDs are scoped by form type, so the detail endpoint requires both `formType` and ID.
+- The generic Contact, Sourcing, Meeting and Event APIs preserve unknown JSON field names and nested values rather than relying on unverified staging form fields.
