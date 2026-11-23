@@ -100,7 +100,7 @@ Set a working SMTP mailer in `.env` for delivery. The default `MAIL_MAILER=log` 
 ## Tests
 
 ```bash
-php artisan test
+vendor/bin/phpunit
 ```
 
 GitHub Actions runs the PHPUnit feature suite on pushes to `main` and `backend/**` and on pull requests targeting `main`.

@@ -36,4 +36,4 @@ jobs:
         run: composer validate --strict
 
       - name: Run migrations and automated tests
-        run: php artisan test
+        run: vendor/bin/phpunit
