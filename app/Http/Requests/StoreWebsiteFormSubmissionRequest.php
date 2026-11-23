@@ -9,7 +9,7 @@ class StoreWebsiteFormSubmissionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if (! is_array($this->input('payload'))) {
-            $payload = $this->except(['website', '_token']);
+            $payload = $this->except(['_website_trap', '_token']);
             $this->merge(['payload' => $payload]);
         }
     }
@@ -22,7 +22,7 @@ class StoreWebsiteFormSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'website' => ['nullable', 'string', 'max:0'],
+            '_website_trap' => ['nullable', 'string', 'max:0'],
             'payload' => [
                 'required',
                 'array',

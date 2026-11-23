@@ -150,3 +150,68 @@ Admin role only. Uses soft deletion.
 ## Data privacy
 
 The public creation response contains only the record ID, reference and initial status. Internal notes, status history and assignment are only available through authorized admin endpoints.
+
+---
+
+# Additional Website Forms API (Contact / Sourcing / Meeting / Event)
+
+The generic endpoint stores the full form payload without discarding form-specific fields. Exact staging form field names should be mapped by the frontend developer after checking the live rendered forms.
+
+## Public submission
+
+`POST /api/website-forms/{formType}`
+
+Allowed `formType` values: `contact`, `sourcing`, `meeting`, `event`.
+
+The endpoint accepts either a `payload` object or flat form fields. A honeypot field named `_website_trap` must remain empty. Requests are rate-limited to 5 per IP per minute by default.
+
+Example:
+```json
+{
+  "payload": {
+    "full_name": "Ayesha Khan",
+    "company": "ABC Trading LLC",
+    "email": "ayesha@example.com",
+    "phone": "+971501234567",
+    "subject": "General enquiry",
+    "message": "Please contact me about your services.",
+    "event_name": "Export Forum",
+    "custom_field_from_the_form": "Preserved exactly in payload"
+  }
+}
+```
+
+The backend stores the entire payload JSON. It additionally extracts common contact fields into indexed columns when these aliases are supplied: name/full_name/contact_name/your_name; company/company_name/organization/business_name; email/email_address/contact_email; phone/phone_number/mobile/mobile_number/telephone. Email and phone are format-checked when supplied.
+
+Success (201):
+```json
+{
+  "success": true,
+  "message": "Contact form submitted successfully.",
+  "data": {
+    "id": 42,
+    "reference": "WEB-CONTACT-20261123-A1B2C3D4",
+    "form_type": "contact",
+    "status": "New"
+  }
+}
+```
+
+## Admin management
+
+All admin routes require a Sanctum bearer token and the relevant `website_forms.*` permission.
+
+- `GET /api/admin/website-forms`: paginated list; filters: `form_type`, `status`, `search`, `from`, `to`, `assigned_to`, `per_page`.
+- `GET /api/admin/website-forms/{id}`: full payload, assignee, internal notes, status history and audit log.
+- `PATCH /api/admin/website-forms/{id}`: replace/update the stored `payload` object.
+- `PATCH /api/admin/website-forms/{id}/status`: body `{"status":"Contacted","note":"Called the contact" }`.
+- `POST /api/admin/website-forms/{id}/notes`: body `{"note":"Internal note"}`.
+- `POST /api/admin/website-forms/{id}/assign`: body `{"assigned_to":12}`.
+- `DELETE /api/admin/website-forms/{id}`: admin-only soft delete.
+- `GET /api/admin/website-forms-stats`: total, counts by form type and status.
+- `GET /api/admin/website-forms-export`: filtered CSV export (includes payload JSON).
+
+Statuses: New, Under Review, Contacted, Consultation Scheduled, In Progress, Completed, Cancelled.
+
+Role access mirrors Consultation requests: admin full access, manager cannot delete, agent can only view/change status/add notes for records assigned to that agent. Applicant notifications are sent when an email field is detected; optional admin notifications use `WEBSITE_FORMS_ADMIN_EMAIL` (falls back to `CONSULTATION_ADMIN_EMAIL`).
+

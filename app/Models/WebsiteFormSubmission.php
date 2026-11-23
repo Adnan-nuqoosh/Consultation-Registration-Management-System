@@ -10,7 +10,7 @@ class WebsiteFormSubmission extends Model
     use SoftDeletes;
 
     public const FORM_TYPES = ['contact', 'sourcing', 'meeting', 'event'];
-    public const STATUSES = ['New', 'Under Review', 'Contacted', 'In Progress', 'Completed', 'Cancelled'];
+    public const STATUSES = ['New', 'Under Review', 'Contacted', 'Consultation Scheduled', 'In Progress', 'Completed', 'Cancelled'];
 
     protected $fillable = [
         'reference_number', 'form_type', 'name', 'company', 'email', 'phone',

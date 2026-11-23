@@ -14,13 +14,13 @@ The repository was empty when work began. No pre-existing Laravel app, auth setu
 - [x] PHPUnit feature tests and GitHub Actions workflow definition.
 - [x] API contract and Next.js handover notes.
 
-## Still to verify before production
+- [x] Add flexible Contact, Sourcing, Meeting and Event form APIs with separate admin management, status history, internal notes, assignment, CSV export and notifications.\n- [x] Add automated tests for all four form types and admin workflows.\n\n## Still to verify before production
 - [x] Composer dependency installation and GitHub Actions CI run: passed (10 PHPUnit tests, 34 assertions; SQLite in-memory).
 - [ ] Run migrations against MySQL 8 (CI currently uses SQLite in-memory for feature tests).
 - [ ] Configure real SMTP and verify both email destinations.
 - [ ] Confirm exact allowed product groups, export-status options and preferred-time format with the business/frontend team.
 - [ ] Review production CORS domains, HTTPS, logging, database backups and data retention.
-- [ ] Have the frontend developer integrate and test the form/dashboard against these endpoints.
+- [ ] Have the frontend developer map all exact staging fields, select values and any file inputs to the generic payload contract; staging URL was unavailable during API work.\n- [ ] Have the frontend developer integrate and test these forms and the existing Consultation form inside the existing dashboard.
 
 ## Decisions / assumptions
 - The project targets Laravel 13 and PHP 8.3+.

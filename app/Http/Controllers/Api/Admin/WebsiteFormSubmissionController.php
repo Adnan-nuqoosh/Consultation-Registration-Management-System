@@ -310,7 +310,8 @@ class WebsiteFormSubmissionController extends Controller
                 $nested->where('reference_number', 'like', "%{$term}%")
                     ->orWhere('name', 'like', "%{$term}%")
                     ->orWhere('company', 'like', "%{$term}%")
-                    ->orWhere('email', 'like', "%{$term}%");
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhereRaw('CAST(payload AS CHAR) like ?', ["%{$term}%"]);
             });
         }
         if (! empty($filters['from'])) {
