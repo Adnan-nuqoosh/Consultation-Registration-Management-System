@@ -73,6 +73,7 @@ class ConsultationController extends Controller
 
     public function updateStatus(Request $request, ConsultationRequest $consultation)
     {
+        $this->ensureAssignedAccess($request, $consultation);
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in(ConsultationRequest::STATUSES)],
             'note' => ['nullable', 'string', 'max:2000'],
@@ -105,6 +106,7 @@ class ConsultationController extends Controller
 
     public function addNote(Request $request, ConsultationRequest $consultation)
     {
+        $this->ensureAssignedAccess($request, $consultation);
         $validated = $request->validate(['note' => ['required', 'string', 'max:5000']]);
         $note = ConsultationNote::create([
             'consultation_request_id' => $consultation->id,

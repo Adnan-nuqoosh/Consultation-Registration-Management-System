@@ -21,9 +21,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(($request->input('email') ?? 'anonymous').'|'.$request->ip()));
         RateLimiter::for('consultations', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
 
-        Gate::before(function (User $user, string $ability): ?bool {
-            if (! str_starts_with($ability, 'consultations.')) {
+        Gate::before(function (?User $user, string $ability): ?bool {
+            if (! $user || ! str_starts_with($ability, 'consultations.')) {
                 return null;
+            }
+
+            if (! $user->is_active) {
+                return false;
             }
 
             $permissions = [

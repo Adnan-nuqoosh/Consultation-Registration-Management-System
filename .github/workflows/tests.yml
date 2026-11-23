@@ -23,14 +23,17 @@ jobs:
           extensions: mbstring, pdo_sqlite, sqlite3, ctype, curl, dom, fileinfo, filter, hash, openssl, session, tokenizer, xml
           coverage: none
 
-      - name: Validate composer
-        run: composer validate --strict
-
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
+      - name: Prepare environment
+        run: cp .env.example .env
+
       - name: Generate application key
         run: php artisan key:generate
+
+      - name: Validate composer
+        run: composer validate --strict
 
       - name: Run migrations and automated tests
         run: php artisan test

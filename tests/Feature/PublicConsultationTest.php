@@ -34,8 +34,8 @@ class PublicConsultationTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', 'New')
-            ->assertJsonPath('data.reference', fn ($value) => preg_match('/^CONS-\d{4}-\d{5}$/', $value) === 1);
+            ->assertJsonPath('data.status', 'New');
+        $this->assertMatchesRegularExpression('/^CONS-\d{4}-\d{5}$/', $response->json('data.reference'));
 
         $this->assertDatabaseHas('consultation_requests', [
             'full_name' => 'Ahmed Mohamed',
