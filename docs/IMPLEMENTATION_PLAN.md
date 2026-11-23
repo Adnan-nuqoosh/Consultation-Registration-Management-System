@@ -1,35 +1,31 @@
 # Backend Implementation Plan
 
-The repository was empty at kickoff. There is no existing Laravel application, authentication setup, role model or database schema to audit.
+The repository was empty when work began. No pre-existing Laravel app, auth setup, role model or database schema was available to audit. A fresh Laravel API foundation has therefore been added on a dedicated branch.
 
-## Phase 1 — Laravel foundation
-- [ ] Scaffold Laravel application after confirming target PHP and Laravel versions.
-- [ ] Add safe .env.example and setup guide.
-- [ ] Configure API routes, health endpoint and test tooling.
+## Implemented in this branch
+- [x] Laravel 13 project foundation with PHP 8.3+ requirement.
+- [x] Public consultation registration endpoint with validation, privacy consent, IP throttling and unique reference number.
+- [x] MySQL migrations for users, requests, notes, status history and Sanctum tokens.
+- [x] Admin bearer authentication and admin/manager/agent access rules.
+- [x] Listing, search, status/date/assignee filters and pagination.
+- [x] Details, applicant editing, status update/history, internal notes and assignment.
+- [x] Dashboard statistics and permission-protected CSV export.
+- [x] Applicant confirmation and optional admin notification email attempts.
+- [x] PHPUnit feature tests and GitHub Actions workflow definition.
+- [x] API contract and Next.js handover notes.
 
-## Phase 2 — Public registration
-- [ ] ConsultationRequest model and migration.
-- [ ] Unique reference generation with database-safe uniqueness.
-- [ ] Form Request validation and privacy consent enforcement.
-- [ ] POST endpoint with transaction and 201 response.
-- [ ] Throttling and abuse protections.
-- [ ] Feature tests for valid/invalid submissions and unique references.
+## Still to verify before production
+- [x] Composer dependency installation and GitHub Actions CI run: passed (10 PHPUnit tests, 34 assertions; SQLite in-memory).
+- [ ] Run migrations against MySQL 8 (CI currently uses SQLite in-memory for feature tests).
+- [ ] Configure real SMTP and verify both email destinations.
+- [ ] Confirm exact allowed product groups, export-status options and preferred-time format with the business/frontend team.
+- [ ] Review production CORS domains, HTTPS, logging, database backups and data retention.
+- [ ] Have the frontend developer integrate and test the form/dashboard against these endpoints.
 
-## Phase 3 — Admin
-- [ ] Select admin auth guard after confirming frontend/admin login contract.
-- [ ] Implement permissions against actual user/role schema.
-- [ ] Listing, filters, search, details and applicant updates.
-- [ ] Status history, private notes and assignment.
-- [ ] Soft-delete, stats and secure CSV export.
-
-## Phase 4 — Notifications and handover
-- [ ] Queue admin and applicant emails.
-- [ ] OpenAPI docs and frontend integration examples.
-- [ ] Run migrations and full tests against MySQL.
-- [ ] CI workflow.
-
-## Decisions needed
-- Hosting PHP version and Laravel target.
-- Admin authentication guard and role/permission schema.
-- Exact allowed product group and export status values.
-- Preferred consultation time: named time slot or date/time with timezone.
+## Decisions / assumptions
+- The project targets Laravel 13 and PHP 8.3+.
+- Bearer-token authentication uses Laravel Sanctum because no existing admin auth system was present in the empty repository.
+- Roles are admin, manager and agent, with permissions defined in the application provider. Agents are restricted to requests assigned to them.
+- Product groups are stored as a JSON array.
+- Preferred consultation time is a string preference, not automatically interpreted as a calendar booking.
+- Delete is implemented as soft delete.
