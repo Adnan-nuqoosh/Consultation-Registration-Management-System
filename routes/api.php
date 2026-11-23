@@ -18,6 +18,7 @@ Route::post('consultations', [PublicConsultationController::class, 'store'])
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function (): void {
     Route::get('consultation-stats', [ConsultationController::class, 'stats'])->middleware('can:consultations.stats');
+    Route::get('team-members', [ConsultationController::class, 'teamMembers'])->middleware('can:consultations.assign');
     Route::get('consultations-export', [ConsultationController::class, 'export'])->middleware('can:consultations.export');
     Route::get('consultations', [ConsultationController::class, 'index'])->middleware('can:consultations.view');
     Route::get('consultations/{consultation}', [ConsultationController::class, 'show'])->middleware('can:consultations.view');

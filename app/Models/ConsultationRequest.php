@@ -26,4 +26,5 @@ class ConsultationRequest extends Model
     public function assignee() { return $this->belongsTo(User::class, 'assigned_to'); }
     public function notes() { return $this->hasMany(ConsultationNote::class)->latest(); }
     public function statusHistory() { return $this->hasMany(ConsultationStatusHistory::class)->latest('changed_at'); }
+    public function activities() { return $this->hasMany(ConsultationActivityLog::class)->latest('created_at'); }
 }

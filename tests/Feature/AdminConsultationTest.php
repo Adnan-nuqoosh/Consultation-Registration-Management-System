@@ -78,6 +78,32 @@ class AdminConsultationTest extends TestCase
         $this->postJson('/api/admin/consultations/'.$consultation->id.'/notes', ['note' => 'Unauthorized'])->assertNotFound();
     }
 
+    public function test_manager_can_assign_request_and_activity_is_recorded(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager']);
+        $agent = User::factory()->create(['role' => 'agent']);
+        $consultation = $this->consultation();
+        Sanctum::actingAs($manager);
+
+        $this->getJson('/api/admin/team-members')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $agent->id, 'role' => 'agent']);
+
+        $this->postJson('/api/admin/consultations/'.$consultation->id.'/assign', [
+            'assigned_to' => $agent->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('consultation_requests', [
+            'id' => $consultation->id,
+            'assigned_to' => $agent->id,
+        ]);
+        $this->assertDatabaseHas('consultation_activity_logs', [
+            'consultation_request_id' => $consultation->id,
+            'actor_id' => $manager->id,
+            'action' => 'assigned',
+        ]);
+    }
+
     public function test_manager_cannot_delete_requests(): void
     {
         $manager = User::factory()->create(['role' => 'manager']);

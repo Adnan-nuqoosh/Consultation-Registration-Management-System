@@ -42,11 +42,12 @@ Call POST `/auth/logout` when the admin signs out.
 - Edit applicant: PATCH `/admin/consultations/{id}`
 - Status dropdown/timeline: PATCH `/admin/consultations/{id}/status`, then refresh details
 - Internal notes: POST `/admin/consultations/{id}/notes`
+- Team-member choices: GET `/admin/team-members`
 - Assign team member: POST `/admin/consultations/{id}/assign`
 - Delete action: DELETE `/admin/consultations/{id}`
 - Export: GET `/admin/consultations-export` with the active filters
 
-The assignment API currently expects a numeric user ID. An admin team/user-list endpoint is not included in this first API scope; use the existing dashboard's team-member source or request a backend endpoint addition before building a new user picker.
+The assignment endpoint expects a numeric user ID; GET `/admin/team-members` returns active manager/agent choices for the assignment picker.
 
 ## CORS
 

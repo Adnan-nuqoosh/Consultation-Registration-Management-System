@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateConsultationRequest;
+use App\Models\ConsultationActivityLog;
 use App\Models\ConsultationNote;
 use App\Models\ConsultationRequest;
 use App\Models\ConsultationStatusHistory;
@@ -39,7 +40,7 @@ class ConsultationController extends Controller
     public function show(Request $request, ConsultationRequest $consultation)
     {
         $this->ensureAssignedAccess($request, $consultation);
-        $consultation->load(['assignee:id,name,email', 'notes.author:id,name,email', 'statusHistory.actor:id,name,email']);
+        $consultation->load(['assignee:id,name,email', 'notes.author:id,name,email', 'statusHistory.actor:id,name,email', 'activities.actor:id,name,email']);
 
         return response()->json([
             'success' => true,
@@ -59,13 +60,33 @@ class ConsultationController extends Controller
                     'changed_by' => $history->actor?->only(['id', 'name', 'email']),
                     'changed_at' => $history->changed_at?->toISOString(),
                 ]),
+                'activity_log' => $consultation->activities->map(fn (ConsultationActivityLog $activity) => [
+                    'id' => $activity->id,
+                    'action' => $activity->action,
+                    'details' => $activity->details,
+                    'actor' => $activity->actor?->only(['id', 'name', 'email']),
+                    'created_at' => $activity->created_at?->toISOString(),
+                ]),
             ],
         ]);
     }
 
     public function update(UpdateConsultationRequest $request, ConsultationRequest $consultation)
     {
-        $consultation->update($request->validated());
+        $consultation->fill($request->validated());
+        $changedFields = array_keys($consultation->getDirty());
+        $consultation->save();
+
+        if ($changedFields !== []) {
+            ConsultationActivityLog::create([
+                'consultation_request_id' => $consultation->id,
+                'actor_id' => $request->user()->id,
+                'action' => 'applicant_updated',
+                'details' => ['fields' => $changedFields],
+                'created_at' => now(),
+            ]);
+        }
+
         $consultation->refresh()->load('assignee:id,name,email');
 
         return response()->json(['success' => true, 'message' => 'Consultation request updated.', 'data' => $this->serialize($consultation)]);
@@ -114,6 +135,14 @@ class ConsultationController extends Controller
             'note' => $validated['note'],
         ]);
 
+        ConsultationActivityLog::create([
+            'consultation_request_id' => $consultation->id,
+            'actor_id' => $request->user()->id,
+            'action' => 'internal_note_added',
+            'details' => ['note_id' => $note->id],
+            'created_at' => now(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Internal note added.',
@@ -132,7 +161,19 @@ class ConsultationController extends Controller
             'assigned_to' => ['required', 'integer', Rule::exists('users', 'id')->where(fn ($query) => $query->where('is_active', true)->whereIn('role', ['manager', 'agent']))],
         ]);
 
+        $previousAssignee = $consultation->assigned_to;
         $consultation->update(['assigned_to' => $validated['assigned_to']]);
+
+        if ((int) $previousAssignee !== (int) $validated['assigned_to']) {
+            ConsultationActivityLog::create([
+                'consultation_request_id' => $consultation->id,
+                'actor_id' => $request->user()->id,
+                'action' => 'assigned',
+                'details' => ['from_user_id' => $previousAssignee, 'to_user_id' => $validated['assigned_to']],
+                'created_at' => now(),
+            ]);
+        }
+
         $consultation->refresh()->load('assignee:id,name,email');
 
         return response()->json([
@@ -142,12 +183,31 @@ class ConsultationController extends Controller
         ]);
     }
 
-    public function destroy(ConsultationRequest $consultation)
+    public function destroy(Request $request, ConsultationRequest $consultation)
     {
         Gate::authorize('consultations.delete');
+        ConsultationActivityLog::create([
+            'consultation_request_id' => $consultation->id,
+            'actor_id' => $request->user()->id,
+            'action' => 'soft_deleted',
+            'details' => ['reference' => $consultation->reference_number],
+            'created_at' => now(),
+        ]);
         $consultation->delete();
 
         return response()->json(['success' => true, 'message' => 'Consultation request deleted.']);
+    }
+
+    public function teamMembers()
+    {
+        Gate::authorize('consultations.assign');
+        $members = User::query()
+            ->where('is_active', true)
+            ->whereIn('role', ['manager', 'agent'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role']);
+
+        return response()->json(['success' => true, 'data' => $members]);
     }
 
     public function stats(Request $request)

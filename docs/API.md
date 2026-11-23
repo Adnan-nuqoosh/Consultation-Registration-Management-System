@@ -109,6 +109,9 @@ Each actual status change is stored in `consultation_status_histories` with acto
 
 Creates a private note with its author and timestamp.
 
+### GET /admin/team-members
+Returns active manager/agent user choices for the assignment picker. Requires assignment permission.
+
 ### POST /admin/consultations/{id}/assign
 
 ```json
@@ -124,6 +127,8 @@ Returns total and counts by all seven statuses. Agent totals are limited to thei
 ### GET /admin/consultations-export
 
 Downloads filtered CSV. Uses the same search/status/date/assignee filters as the list endpoint, streams results in chunks, and neutralizes spreadsheet formula-leading cells.
+
+Applicant edits, note additions, assignment and soft deletion are also recorded in the activity log returned by the details endpoint.
 
 ### DELETE /admin/consultations/{id}
 

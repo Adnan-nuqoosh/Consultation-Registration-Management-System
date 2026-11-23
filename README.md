@@ -77,6 +77,7 @@ Authenticated:
 - `DELETE /api/admin/consultations/{id}` (soft delete; admin only)
 - `GET /api/admin/consultation-stats`
 - `GET /api/admin/consultations-export` (CSV)
+- `GET /api/admin/team-members` (assignment choices)
 
 See [API contract](docs/API.md) and [Next.js handover notes](docs/FRONTEND_HANDOFF.md).
 
