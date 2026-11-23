@@ -307,7 +307,7 @@ class ConsultationController extends Controller
 
     private function ensureAssignedAccess(Request $request, ConsultationRequest $consultation): void
     {
-        if ($request->user()->role === 'agent' && $consultation->assigned_to !== $request->user()->id) {
+        if ($request->user()->role === 'agent' && (int) $consultation->assigned_to !== (int) $request->user()->id) {
             abort(404);
         }
     }

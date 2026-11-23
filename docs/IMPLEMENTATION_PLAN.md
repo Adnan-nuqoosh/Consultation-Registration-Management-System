@@ -15,7 +15,7 @@ The repository was empty when work began. No pre-existing Laravel app, auth setu
 - [x] API contract and Next.js handover notes.
 
 ## Still to verify before production
-- [ ] Composer dependency installation and CI test run.
+- [x] Composer dependency installation and GitHub Actions CI run: passed (10 PHPUnit tests, 34 assertions; SQLite in-memory).
 - [ ] Run migrations against MySQL 8 (CI currently uses SQLite in-memory for feature tests).
 - [ ] Configure real SMTP and verify both email destinations.
 - [ ] Confirm exact allowed product groups, export-status options and preferred-time format with the business/frontend team.
