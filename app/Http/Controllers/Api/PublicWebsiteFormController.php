@@ -30,7 +30,9 @@ class PublicWebsiteFormController extends Controller
             ], 422);
         }
 
-        if ($phone !== null && ! preg_match('/^\+?[0-9][0-9\s().-]{5,24}$/', $phone)) {
+        if ($phone !== null && (! preg_match('/^\\+?[0-9][0-9\\s().-]{5,24}$/', $phone)
+            || strlen(preg_replace('/\\D+/', '', $phone)) < 7
+            || strlen(preg_replace('/\\D+/', '', $phone)) > 15)) {
             return response()->json([
                 'success' => false,
                 'message' => 'The submitted phone number is invalid.',

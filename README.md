@@ -59,7 +59,11 @@ Laravel 13 requires PHP 8.3 or newer. Check the official [Laravel release/suppor
    php artisan serve
    ```
 
-## Existing website forms (Contact / Sourcing / Meeting / Event)\n\nPublic submissions use POST `/api/website-forms/{contact|sourcing|meeting|event}`. The full form-specific payload is preserved as JSON, with common contact fields indexed for admin search. Admin management APIs are documented in `docs/API.md`; frontend mapping is in `docs/FRONTEND_HANDOFF.md`.\n\n## API overview
+## Existing website forms (Contact / Sourcing / Meeting / Event)
+
+Public submissions use POST `/api/website-forms/{contact|sourcing|meeting|event}`. The full form-specific payload is preserved as JSON, with common contact fields indexed for admin search. Admin management APIs are documented in `docs/API.md`; frontend mapping is in `docs/FRONTEND_HANDOFF.md`.
+
+## API overview
 
 Public:
 - `POST /api/consultations` — submit a request (5 requests/minute/IP).
