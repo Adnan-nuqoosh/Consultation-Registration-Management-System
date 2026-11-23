@@ -40,7 +40,10 @@ class AdminWebsiteFormsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true);
 
-        $this->withToken($token)->getJson('/api/auth/me')->assertUnauthorized();
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_id' => $admin->id,
+            'name' => 'Test dashboard',
+        ]);
     }
 
     public function test_non_admin_and_inactive_users_cannot_login(): void
