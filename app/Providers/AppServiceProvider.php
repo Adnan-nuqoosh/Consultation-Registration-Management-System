@@ -20,9 +20,10 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(($request->input('email') ?? 'anonymous').'|'.$request->ip()));
         RateLimiter::for('consultations', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        RateLimiter::for('website-forms', fn (Request $request) => Limit::perMinute((int) config('website_forms.rate_limit_per_minute', 5))->by($request->ip()));
 
         Gate::before(function (?User $user, string $ability): ?bool {
-            if (! $user || ! str_starts_with($ability, 'consultations.')) {
+            if (! $user || (! str_starts_with($ability, 'consultations.') && ! str_starts_with($ability, 'website_forms.'))) {
                 return null;
             }
 
@@ -36,7 +37,15 @@ class AppServiceProvider extends ServiceProvider
                 'agent' => ['consultations.view', 'consultations.update_status', 'consultations.add_notes', 'consultations.stats'],
             ];
 
-            return in_array($ability, $permissions[$user->role] ?? [], true);
+            $formPermissions = [
+                'admin' => ['website_forms.view', 'website_forms.update', 'website_forms.update_status', 'website_forms.add_notes', 'website_forms.assign', 'website_forms.export', 'website_forms.stats', 'website_forms.delete'],
+                'manager' => ['website_forms.view', 'website_forms.update', 'website_forms.update_status', 'website_forms.add_notes', 'website_forms.assign', 'website_forms.export', 'website_forms.stats'],
+                'agent' => ['website_forms.view', 'website_forms.update_status', 'website_forms.add_notes', 'website_forms.stats'],
+            ];
+
+            $allowed = array_merge($permissions[$user->role] ?? [], $formPermissions[$user->role] ?? []);
+
+            return in_array($ability, $allowed, true);
         });
     }
 }
